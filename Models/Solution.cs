@@ -19,9 +19,6 @@ namespace Viettel_Solution.Models
         public string Category { get; set; }
 
         [Required]
-        public int Price { get; set; }
-
-        [Required]
         public string Image { get; set; }
 
         public virtual ICollection<Feature> Features { get; set; }

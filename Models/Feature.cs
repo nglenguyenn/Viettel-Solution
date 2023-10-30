@@ -15,6 +15,9 @@ namespace Viettel_Solution.Models
         public string Name { get; set; }
 
         [Required]
+        public string Image { get; set; }
+
+        [Required]
         [StringLength(1000)]
         public string Description { get; set; }
 

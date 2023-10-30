@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using System.Net.Http.Headers;
 
 namespace Viettel_Solution.Models
 {
@@ -19,7 +20,6 @@ namespace Viettel_Solution.Models
         {
             return this.Solutions;
         }
-
         public IQueryable<Feature> GetFeatures(int solutionId)
         {
             return this.Features.Where(f => f.SolutionId == solutionId);
