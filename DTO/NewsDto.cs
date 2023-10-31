@@ -1,8 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Viettel_Solution.Models;
 
-namespace Viettel_Solution.Models
+namespace Viettel_Solution.DTO
 {
-    public class News
+    public class NewsDto
     {
         public string Id { get; set; }
         public string Title { get; set; }

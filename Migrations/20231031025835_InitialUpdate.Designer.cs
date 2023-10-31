@@ -12,8 +12,8 @@ using Viettel_Solution.Models;
 namespace Viettel_Solution.Migrations
 {
     [DbContext(typeof(ViettelSolutionDbConext))]
-    [Migration("20231030034625_DatabaseFirst")]
-    partial class DatabaseFirst
+    [Migration("20231031025835_InitialUpdate")]
+    partial class InitialUpdate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,24 +27,28 @@ namespace Viettel_Solution.Migrations
 
             modelBuilder.Entity("Viettel_Solution.Models.Feature", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Image")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("SolutionId")
-                        .HasColumnType("int");
+                    b.Property<string>("SolutionId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
@@ -55,18 +59,14 @@ namespace Viettel_Solution.Migrations
 
             modelBuilder.Entity("Viettel_Solution.Models.News", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("Category")
                         .HasColumnType("int");
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasMaxLength(10000)
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("Date")
@@ -74,18 +74,15 @@ namespace Viettel_Solution.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Image")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -94,20 +91,12 @@ namespace Viettel_Solution.Migrations
 
             modelBuilder.Entity("Viettel_Solution.Models.Solution", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Image")
                         .IsRequired()
@@ -115,11 +104,7 @@ namespace Viettel_Solution.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<int>("Price")
-                        .HasColumnType("int");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
