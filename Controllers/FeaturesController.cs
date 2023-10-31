@@ -1,5 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Headers;
+using Viettel_Solution.DTO;
 using Viettel_Solution.Models;
+using Viettel_Solution.Storage;
 
 namespace ViettelSolutions.Controllers
 {
@@ -8,94 +14,127 @@ namespace ViettelSolutions.Controllers
     public class FeaturesController : ControllerBase
     {
         private readonly ViettelSolutionDbConext _context;
+        private readonly IStorageService _storageService;
+        private readonly IMapper _mapper;
 
-        public FeaturesController(ViettelSolutionDbConext context)
+        public FeaturesController(ViettelSolutionDbConext context, IMapper mapper, IStorageService storageService)
         {
             _context = context;
+            _storageService = storageService;
+            _mapper = mapper;
         }
-
-        // GET: /features
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IEnumerable<FeatureDto>> GetFeature()
         {
-            // Lấy tất cả các tính năng từ database
-            var features = _context.Features.ToList();
-
-            // Trả về danh sách các tính năng
-            return Ok(features);
+            var feature = await _context.Features.ToListAsync();
+            foreach (var item in feature)
+            {
+                item.Image = _storageService.GetFileUrl(item.Image);
+            }
+            var featurefto = _mapper.Map<IEnumerable<FeatureDto>>(feature);
+            return featurefto;
         }
-
-        // GET: /features/5
+        //Get{id}
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<ActionResult<FeatureDto>> GetFeatureById(string id)
         {
-            // Tìm kiếm tính năng có id được chỉ định
-            var feature = _context.Features.Find(id);
-
-            // Nếu tính năng không tồn tại, trả về NotFound
-            if (feature == null)
-            {
-                return NotFound();
-            }
-
-            // Trả về tính năng
-            return Ok(feature);
-        }
-
-        // POST: /features
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Feature feature)
-        {
-            // Thêm tính năng mới vào database
-            await _context.Features.AddAsync(feature);
-            await _context.SaveChangesAsync();
-
-            // Trả về tính năng mới được tạo
-            return CreatedAtAction("GetById", new { id = feature.Id }, feature);
-        }
-
-        // PUT: /features/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Feature feature)
-        {
-            // Tìm kiếm tính năng có id được chỉ định
-            var existingFeature = await _context.Features.FindAsync(id);
-
-            // Nếu tính năng không tồn tại, trả về NotFound
-            if (existingFeature == null)
-            {
-                return NotFound();
-            }
-
-            // Cập nhật tính năng
-            existingFeature.Description = feature.Description;
-            existingFeature.Name = feature.Name;
-
-            await _context.SaveChangesAsync();
-
-            // Trả về tính năng đã được cập nhật
-            return Ok(existingFeature);
-        }
-
-        // DELETE: /features/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            // Tìm kiếm tính năng có id được chỉ định
             var feature = await _context.Features.FindAsync(id);
 
-            // Nếu tính năng không tồn tại, trả về NotFound
+            if (feature == null)
+            {
+                return NotFound();
+            }
+            feature.Image = _storageService.GetFileUrl(feature.Image);
+            var featuredto = _mapper.Map<FeatureDto>(feature);
+            return featuredto;
+        }
+        [HttpGet("GetFeatureBySolution/{solutionId}")]
+        public async Task<IEnumerable<FeatureDto>> GetFeatureBySolution(string solutionId)
+        {
+            var features = await _context.Features
+                .Include(p => p.Solution)
+                .Where(p => p.SolutionId.Equals(solutionId))
+                .AsNoTracking()
+                .ToListAsync();
+
+            foreach (var item in features)
+            {
+                item.Image = _storageService.GetFileUrl(item.Image);
+            }
+
+            var featuredto = _mapper.Map<IEnumerable<FeatureDto>>(features);
+
+            return featuredto;
+        }
+
+        //Create
+        [HttpPost]
+        public async Task<ActionResult<FeatureDto>> PostFeature([FromForm] FeatureCreateRequest featureCreateRequest)
+        {
+            var feature = _mapper.Map<Feature>(featureCreateRequest);
+            feature.Id = Guid.NewGuid().ToString();
+
+            if (featureCreateRequest.ThumbnailImages != null)
+            {
+                feature.Image = await SaveFile(featureCreateRequest.ThumbnailImages);
+            }
+            else
+            {
+                feature.Image = "noimage.png";
+            }
+
+            _context.Features.Add(feature);
+            await _context.SaveChangesAsync();
+
+            var featuredto = _mapper.Map<FeatureDto>(feature);
+            return featuredto;
+        }
+        //Update
+        [HttpPut("{id}")]
+        public async Task<ActionResult<FeatureDto>> PutFeature(string id, [FromForm] FeatureCreateRequest featureCreateRequest)
+        {
+            var feature = await _context.Features.FindAsync(id);
+
             if (feature == null)
             {
                 return NotFound();
             }
 
-            // Xóa tính năng
+            if (featureCreateRequest.ThumbnailImages != null)
+            {
+                feature.Image = await SaveFile(featureCreateRequest.ThumbnailImages);
+            }
+
+            _context.Entry<Feature>(feature).CurrentValues.SetValues(featureCreateRequest);
+
+            await _context.SaveChangesAsync();
+
+            var featuredto = _mapper.Map<FeatureDto>(feature);
+
+            return featuredto;
+        }
+        //Delete
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<FeatureDto>> DeleteFeature(string id)
+        {
+            var feature = await _context.Features.FindAsync(id);
+            if (feature == null)
+            {
+                return NotFound();
+            }
+            var featuredto = _mapper.Map<FeatureDto>(feature);
             _context.Features.Remove(feature);
             await _context.SaveChangesAsync();
 
-            // Trả về NoContent
-            return NoContent();
+            return featuredto;
+        }
+
+        private async Task<string> SaveFile(IFormFile file)
+        {
+            var originalFileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(originalFileName)}";
+            await _storageService.SaveFileAsync(file.OpenReadStream(), fileName);
+            return fileName;
         }
     }
 }
