@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Viettel_Solution.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Viettel_Solution.Storage;
+using Microsoft.Net.Http.Headers;
+using AutoMapper;
+using Viettel_Solution.DTO;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ViettelSolutions.Controllers
 {
@@ -12,97 +15,110 @@ namespace ViettelSolutions.Controllers
     public class SolutionsController : ControllerBase
     {
         private readonly ViettelSolutionDbConext _context;
+        private readonly IStorageService _storageService;
+        private readonly IMapper _mapper;
 
-        public SolutionsController(ViettelSolutionDbConext context)
+        public SolutionsController(ViettelSolutionDbConext context,IMapper mapper,IStorageService storageService)
         {
             _context = context;
+            _storageService = storageService;
+            _mapper = mapper;
         }
 
         // GET: /solutions
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IEnumerable<SolutionDto>> GetSolution()
         {
-            // Lấy tất cả các giải pháp từ database
-            var solutions = _context.Solutions.ToList();
-
-            // Trả về danh sách các giải pháp
-            return Ok(solutions);
+            var solution = await _context.Solutions.ToListAsync();
+            foreach (var item in solution) 
+            { 
+                item.Image = _storageService.GetFileUrl(item.Image);
+            }
+            var solutiondto = _mapper.Map<IEnumerable<SolutionDto>>(solution);
+            return solutiondto;
         }
-
-        // GET: /solutions/5
+        //Get{id}
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<ActionResult<SolutionDto>> GetSolution(string id)
         {
-            // Tìm kiếm giải pháp có id được chỉ định
-            var solution = _context.Solutions.Find(id);
-
-            // Nếu giải pháp không tồn tại, trả về NotFound
-            if (solution == null)
-            {
-                return NotFound();
-            }
-            // Trả về giải pháp
-            return Ok(solution);
-
-        }
-
-        // POST: /solutions
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Solution solution)
-        {
-            // Thêm giải pháp mới vào database
-            await _context.Solutions.AddAsync(solution);
-            await _context.SaveChangesAsync();
-            // Trả về giải pháp mới được tạo
-            return CreatedAtAction("GetById", new { id = solution.Id }, solution);
-        }
-
-        // PUT: /solutions/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Solution solution)
-        {
-            // Tìm kiếm giải pháp có id được chỉ định
-            var existingSolution = await _context.Solutions.FindAsync(id);
-
-            // Nếu giải pháp không tồn tại, trả về NotFound
-            if (existingSolution == null)
-            {
-                return NotFound();
-            }
-
-            // Cập nhật giải pháp
-            existingSolution.Name = solution.Name;
-            existingSolution.Features = solution.Features;
-            existingSolution.Description = solution.Description;
-            existingSolution.Image = solution.Image;
-            existingSolution.Category = solution.Category;
-
-            await _context.SaveChangesAsync();
-
-            // Trả về giải pháp đã được cập nhật
-            return Ok(existingSolution);
-        }
-
-        // DELETE: /solutions/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            // Tìm kiếm giải pháp có id được chỉ định
             var solution = await _context.Solutions.FindAsync(id);
 
-            // Nếu giải pháp không tồn tại, trả về NotFound
+            if (solution == null)
+            {
+                return NotFound();
+            }
+            solution.Image = _storageService.GetFileUrl(solution.Image);
+            var solutiondto = _mapper.Map<SolutionDto>(solution);
+            return solutiondto;
+        }
+        //Create
+        [HttpPost]
+        public async Task<ActionResult<SolutionDto>> PostSolution([FromForm] SolutionCreateRequest solutionCreateRequest)
+        {
+            var solution = _mapper.Map<Solution>(solutionCreateRequest);
+            solution.Id = Guid.NewGuid().ToString();
+
+            if (solutionCreateRequest.ThumbnailImages != null)
+            {
+                solution.Image = await SaveFile(solutionCreateRequest.ThumbnailImages);
+            }
+            else
+            {
+                solution.Image = "noimage.png";
+            }
+
+            _context.Solutions.Add(solution);
+            await _context.SaveChangesAsync();
+
+            var solutiondto = _mapper.Map<SolutionDto>(solution);
+            return solutiondto;
+        }
+        //Update
+        [HttpPut("{id}")]
+        public async Task<ActionResult<SolutionDto>> PutSolution(string id, [FromForm] SolutionCreateRequest solutionCreateRequest)
+        {
+            var solution = await _context.Solutions.FindAsync(id);
+
             if (solution == null)
             {
                 return NotFound();
             }
 
-            // Xóa giải pháp
+            if (solutionCreateRequest.ThumbnailImages != null)
+            {
+                solution.Image = await SaveFile(solutionCreateRequest.ThumbnailImages);
+            }
+
+            _context.Entry<Solution>(solution).CurrentValues.SetValues(solutionCreateRequest);
+
+            await _context.SaveChangesAsync();
+
+            var solutiondto = _mapper.Map<SolutionDto>(solution);
+
+            return solutiondto;
+        }
+        //Delete
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<SolutionDto>> DeleteSolution(string id)
+        {
+            var solution = await _context.Solutions.FindAsync(id);
+            if (solution == null)
+            {
+                return NotFound();
+            }
+            var solutiondto = _mapper.Map<SolutionDto>(solution);
             _context.Solutions.Remove(solution);
             await _context.SaveChangesAsync();
 
-            // Trả về NoContent
-            return NoContent();
+            return solutiondto;
         }
 
+        private async Task<string> SaveFile(IFormFile file)
+        {
+            var originalFileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Value.Trim('"');
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(originalFileName)}";
+            await _storageService.SaveFileAsync(file.OpenReadStream(), fileName);
+            return fileName;
+        }
     }
 }
