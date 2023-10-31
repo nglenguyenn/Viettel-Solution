@@ -1,11 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 
 namespace Viettel_Solution.Models
 {
-    public class ViettelSolutionDbConext : DbContext
+    public class ViettelSolutionDbConext : IdentityDbContext
     {
         public ViettelSolutionDbConext(DbContextOptions<ViettelSolutionDbConext> options) : base(options)
         {
