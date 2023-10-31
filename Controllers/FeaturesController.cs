@@ -31,8 +31,8 @@ namespace ViettelSolutions.Controllers
             {
                 item.Image = _storageService.GetFileUrl(item.Image);
             }
-            var featurefto = _mapper.Map<IEnumerable<FeatureDto>>(feature);
-            return featurefto;
+            var featuredto = _mapper.Map<IEnumerable<FeatureDto>>(feature);
+            return featuredto;
         }
         //Get{id}
         [HttpGet("{id}")]
